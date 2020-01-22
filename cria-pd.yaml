@@ -1,0 +1,4 @@
+---
+- name: cria pd
+  debug:
+    msg: cria pd a partir daqui

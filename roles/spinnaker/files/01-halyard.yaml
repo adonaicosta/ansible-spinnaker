@@ -1,0 +1,68 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv-halyard
+  labels:
+    failure-domain.beta.kubernetes.io/zone: southamerica-east1-a__southamerica-east1-b
+    app: halyard
+spec:
+  storageClassName: ""
+  capacity:
+    storage: 200G
+  accessModes:
+  - ReadWriteOnce
+  gcePersistentDisk:
+    pdName: pd-halyard
+    fsType: ext4
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pvc-halyard
+  labels:
+    app: halyard
+spec:
+  storageClassName: ""
+  volumeName: pv-halyard
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 200G
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: halyard
+  name: halyard
+  namespace: spinnaker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: halyard
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: halyard
+    spec:
+      containers:
+      - image: gcr.io/spinnaker-marketplace/halyard:stable
+        name: halyard
+        volumeMounts:
+          - mountPath: /home/spinnaker/.hal
+            name: homehal
+          - mountPath: /home/spinnaker/.kube
+            name: kubeconfig
+      volumes:
+        - name: kubeconfig
+          emptyDir: {}  
+        - name: homehal
+          persistentVolumeClaim:
+            claimName: pvc-halyard

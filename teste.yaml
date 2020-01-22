@@ -1,0 +1,34 @@
+---
+- name: teste
+  hosts: localhost
+  gather_facts: true
+
+  tasks:
+  
+  - name: check gce_pd
+    shell: "gcloud compute disks list --filter=\"name=('pd-halyard')\" --format=json"
+    register: pdexists
+    ignore_errors: True
+
+  - name: print raw gcloud compute disks lists
+    debug:
+      msg: "{{ pdexists }}"
+    when: "'READY' in pdexists.stdout"
+
+  - name: set fact
+    set_fact:
+      pdhalyard:  "{{ pdexists.stdout | from_json }}"
+    when: "'READY' in pdexists.stdout"
+   
+  - name: print pdhalyard ja em json
+    debug:
+      msg: "{{ pdhalyard }}"
+    when: "'READY' in pdexists.stdout"
+
+  - name: parse fact get state disk
+    debug:
+      msg: "crie novo disco" 
+    when: "'READY' not in pdexists.stdout"
+
+  - include: cria-pd.yaml
+    when: "'READY' not in pdexists.stdout"

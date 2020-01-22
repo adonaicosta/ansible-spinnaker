@@ -1,0 +1,54 @@
+---
+  - name: Spinnaker
+    gather_facts: true
+#    become: true
+    hosts: local
+    tasks:
+      - name: install requeriments ansible k8s module
+        local_actions:
+          pip:
+            name: "{{ item }}"
+            state: latest
+            executable: pip3
+          with_items:
+            - PyYAML
+            - openshift
+
+      - name: Check cluster access
+        k8s_info:
+          kind: Deployment
+          namespace: kube-system
+
+      - name: create spinnaker ns
+        k8s:
+          kind: namespace
+          api_version: v1
+          name: spinnaker
+          state: present
+
+      - name: check gcePersistentDisk
+        gce_pd:
+          name: pd_halyard
+          state: present
+          zone: southamerica_east1
+          size_gb: 200
+
+      - name: create halyard deploy
+        k8s:
+          state: present
+          src: ../files/01-halyard.yaml
+        register: halyard_deploy
+        wait: yes
+
+      - name: get halyard pod
+        k8s_info:
+          kind: pod
+          namespace: spinnaker
+          label_selectors:
+            - app = halyard
+        register: halyard_pod 
+
+      - name: Transport k8s-config to Halyard
+        shell: "kubeclt -n spinnaker cp ~/.kube/config {{ halyard_pod }}:/home/spinnaker/.kube/config" 
+
+      - name: 

@@ -1,0 +1,5 @@
+---
+- name: create halyard home directory
+  file:
+    path: /tmp/.hal
+    
